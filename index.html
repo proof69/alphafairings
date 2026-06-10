@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="cs" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alphafairings | Katalog závodních dílů na motocykly</title>
+  <meta name="description" content="Prémiový katalog a vyhledávač závodních dílů pro okruhové motocykly. Odkazy na výrobce, specifikace a kompatibilita.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Preload hero image for performance (LCP) -->
+  <link rel="preload" href="assets/hero-bg.png" as="image" fetchpriority="high">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <span class="logo-icon">🏁</span>
+        <div class="logo-text">
+          <span class="logo-title">ALPHA<span class="highlight">FAIRINGS</span></span>
+          <span class="logo-subtitle">PRO SUPERBIKE DIRECTORY</span>
+        </div>
+      </div>
+      
+      <nav class="main-nav" aria-label="Hlavní navigace">
+        <ul>
+          <li><a href="#catalog-section" class="active">Katalog dílů</a></li>
+          <li><a href="#manufacturers-section">Výrobci</a></li>
+        </ul>
+      </nav>
+      
+      <div class="header-actions">
+        <button id="admin-toggle" class="admin-toggle-btn" aria-label="Přepnout administrátorský režim">
+          <span class="admin-lock-icon">🔒</span> <span class="admin-text">Vstoupit do administrace</span>
+        </button>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Přepnout tmavý/světelný režim">
+          <span class="sun-icon">☀️</span>
+          <span class="moon-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-bg-wrapper">
+      <img src="assets/hero-bg.png" alt="Závodní motocykl na stojanu v boxu" class="hero-bg-image" fetchpriority="high" width="1200" height="1200">
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <span class="badge">Elite Race Components</span>
+      <h1>Konfigurátor a katalog závodních dílů</h1>
+      <p class="hero-lead">Objevte nejlepší komponenty pro váš stroj. Vyberte model své motorky, filtrujte podle kategorií a propojte se přímo s oficiálními výrobci pro nákup.</p>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-number">100+</span>
+          <span class="stat-label">Závodních dílů</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">8+</span>
+          <span class="stat-label">Top výrobců</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">5+</span>
+          <span class="stat-label">Superbiků</span>
+        </div>
+      </div>
+      <a href="#catalog-section" class="btn btn-primary btn-large">Prozkoumat katalog</a>
+    </div>
+  </section>
+
+  <!-- Main Content Area -->
+  <main class="main-container">
+    
+    <!-- Filter and Search Section -->
+    <section id="catalog-section" class="catalog-section">
+      <div class="section-header">
+        <h2>Vyhledávání a filtry závodních dílů</h2>
+        <p>Zvolte motocykl a kategorii pro zobrazení kompatibilních dílů</p>
+      </div>
+
+      <search class="search-container">
+        <form id="filter-form" onsubmit="event.preventDefault();">
+          
+          <!-- Search input -->
+          <div class="search-box-wrapper">
+            <label for="search-input" class="sr-only">Hledat podle klíčového slova</label>
+            <div class="search-input-container">
+              <span class="search-icon">🔍</span>
+              <input type="search" id="search-input" placeholder="Hledat díly (např. Brembo, výfuk, kotouče...)" autocomplete="off">
+            </div>
+          </div>
+          
+          <!-- Motorcycle Selector (Horizontal Cards) -->
+          <div class="filter-group">
+            <h3 class="filter-group-title">1. Výběr motocyklu</h3>
+            <div id="moto-selector" class="moto-chips-container scroll-x-affordance">
+              <!-- Dynamically populated in app.js -->
+            </div>
+          </div>
+
+          <!-- Category Selector (Horizontal Chips) -->
+          <div class="filter-group">
+            <h3 class="filter-group-title">2. Výběr kategorie</h3>
+            <div id="category-selector" class="category-chips-container scroll-x-affordance">
+              <!-- Dynamically populated in app.js -->
+            </div>
+          </div>
+          
+        </form>
+      </search>
+
+      <!-- Active Filters Display -->
+      <div id="active-filters-bar" class="active-filters-bar hidden">
+        <span class="filters-label">Aktivní filtry:</span>
+        <div id="active-filters-list" class="active-filters-list"></div>
+        <button id="clear-filters-btn" class="btn btn-text">Resetovat vše</button>
+      </div>
+
+      <!-- Admin controls bar -->
+      <div id="admin-controls-bar" class="admin-controls-bar hidden">
+        <div class="admin-bar-title">🛠️ Administrační panel:</div>
+        <div class="admin-bar-actions">
+          <button type="button" id="add-part-btn" class="btn btn-primary">➕ Přidat nový díl</button>
+          <button type="button" id="export-parts-btn" class="btn btn-secondary">💾 Exportovat data (JSON)</button>
+          <button type="button" id="reset-parts-btn" class="btn btn-secondary">🔄 Resetovat data</button>
+        </div>
+      </div>
+
+      <!-- Parts Grid -->
+      <div class="catalog-results-header">
+        <span id="results-count" class="results-count">Načítání dílů...</span>
+      </div>
+      
+      <div id="parts-grid" class="parts-grid">
+        <!-- Dynamically populated in app.js -->
+      </div>
+      
+      <!-- Empty state -->
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-state-icon">🏍️💨</div>
+        <h3>Žádné díly nebyly nalezeny</h3>
+        <p>Zkuste upravit filtry nebo vyhledávací dotaz.</p>
+        <button id="reset-search-btn" class="btn btn-secondary">Zobrazit vše</button>
+      </div>
+    </section>
+
+    <!-- Manufacturer Directory Section -->
+    <section id="manufacturers-section" class="manufacturers-section">
+      <div class="section-header">
+        <h2>Prémiové závodní značky</h2>
+        <p>Kliknutím na značku zobrazíte její detaily a seznam dílů</p>
+      </div>
+      
+      <div id="manufacturers-grid" class="manufacturers-grid">
+        <!-- Dynamically populated in app.js -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Detailed Modal for Part Details -->
+  <dialog id="part-detail-dialog" class="detail-dialog">
+    <div class="dialog-content">
+      <button id="close-dialog-btn" class="dialog-close-btn" aria-label="Zavřít detail">✕</button>
+      <div id="dialog-body">
+        <!-- Dynamically populated in app.js -->
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Dialog for Add/Edit Form -->
+  <dialog id="part-form-dialog" class="detail-dialog">
+    <div class="dialog-content">
+      <button id="close-form-dialog-btn" class="dialog-close-btn" aria-label="Zavřít formulář">✕</button>
+      <div class="dialog-detail-header">
+        <h2 id="form-dialog-title">Nový závodní díl</h2>
+        <p>Vyplňte prosím parametry a kompatibilitu dílu.</p>
+      </div>
+      
+      <form id="part-editor-form" onsubmit="event.preventDefault();">
+        <input type="hidden" id="edit-part-id" value="">
+        
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="form-part-name">Název dílu*</label>
+            <input type="text" id="form-part-name" required placeholder="Např. Brembo GP4-RX třmeny">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-part-sku">Katalogové číslo (SKU)*</label>
+            <input type="text" id="form-part-sku" required placeholder="Např. 220B01010">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-part-category">Kategorie*</label>
+            <select id="form-part-category" required>
+              <option value="" disabled selected>Vyberte kategorii</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          
+          <div class="form-field">
+            <label for="form-part-manufacturer">Výrobce*</label>
+            <select id="form-part-manufacturer" required>
+              <option value="" disabled selected>Vyberte výrobce</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          
+          <div class="form-field">
+            <label for="form-part-price">Orientační cena*</label>
+            <input type="text" id="form-part-price" required placeholder="Např. cca 42 000 Kč">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-part-url">Odkaz na produkt (URL)*</label>
+            <input type="url" id="form-part-url" required placeholder="https://example.com/product">
+          </div>
+        </div>
+        
+        <div class="form-field" style="margin-top: 16px;">
+          <label for="form-part-desc">Popis dílu (max. 3 věty)*</label>
+          <textarea id="form-part-desc" rows="3" required placeholder="Popište hlavní funkce, výhody a úsporu hmotnosti..."></textarea>
+        </div>
+        
+        <div class="form-field" style="margin-top: 16px;">
+          <span class="form-field-label">Kompatibilní motocykly* (vyberte alespoň jeden)</span>
+          <div id="form-compat-grid" class="form-checkbox-grid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        
+        <div class="form-field" style="margin-top: 20px;">
+          <span class="form-field-label">Technické specifikace (volitelné)</span>
+          <div id="form-specs-container" class="form-specs-container">
+            <!-- Dynamic key-value inputs -->
+          </div>
+          <button type="button" id="add-spec-row-btn" class="btn btn-secondary" style="margin-top: 12px; padding: 6px 12px; font-size: 0.85rem;">
+            ➕ Přidat specifikaci
+          </button>
+        </div>
+        
+        <div class="dialog-footer-actions" style="margin-top: 30px;">
+          <button type="button" id="cancel-form-btn" class="btn btn-secondary">Zrušit</button>
+          <button type="submit" class="btn btn-primary">Uložit díl</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- App Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <span class="logo-icon">🏁</span>
+        <span class="logo-title">ALPHA<span class="highlight">FAIRINGS</span></span>
+      </div>
+      <p class="footer-copy">&copy; 2026 Alphafairings. Všechna práva vyhrazena. Všechny značky a loga jsou majetkem příslušných výrobců.</p>
+      <div class="footer-tech">
+        <span>Built with HTML5, CSS Grid & Vanilla JS</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Logic Module -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

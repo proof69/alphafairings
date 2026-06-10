@@ -242,11 +242,27 @@ function setAdminMode(active) {
   renderParts();
 }
 
-function handleLoginSubmit() {
+// Helper for secure client-side SHA-256 hashing
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function handleLoginSubmit() {
   const username = loginUsernameInput.value.trim();
   const password = loginPasswordInput.value;
   
-  if (username === 'Lukas69' && password === 'Moto69*') {
+  const usernameHash = await sha256(username);
+  const passwordHash = await sha256(password);
+  
+  // SHA-256 hashes of credentials (not stored in plaintext)
+  if (
+    usernameHash === 'c4afc3b089d87e97b235fec828c24ffcec8270eb39168917c6e3b180c57d75c1' &&
+    passwordHash === '67436c3d631a86edd151e452cc599a27bf45ffc210a209cfaf23a1f0e58f06b0'
+  ) {
     setAdminMode(true);
     sessionStorage.setItem('adminLoggedIn', 'true');
     loginDialog.close();
@@ -1347,9 +1363,9 @@ function setupEventListeners() {
   adminToggle.addEventListener('click', handleAdminToggleClick);
   
   // Login Form Submission
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    handleLoginSubmit();
+    await handleLoginSubmit();
   });
   
   // Close Login Modal

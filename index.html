@@ -169,6 +169,97 @@
       </div>
     </section>
 
+    <!-- Admin Dashboard Section -->
+    <section id="admin-dashboard" class="admin-dashboard hidden">
+      <div class="section-header">
+        <h2>Administrace Alphafairings</h2>
+        <p>Správa produktů, motocyklů a výrobců</p>
+      </div>
+
+      <div class="admin-dashboard-layout">
+        <!-- Sidebar Navigation Tabs -->
+        <aside class="admin-sidebar" role="tablist" aria-label="Sekce administrace">
+          <button type="button" class="admin-tab-btn active" role="tab" aria-selected="true" aria-controls="admin-panel-parts" id="tab-parts">
+            📦 Závodní díly
+          </button>
+          <button type="button" class="admin-tab-btn" role="tab" aria-selected="false" aria-controls="admin-panel-motorcycles" id="tab-motorcycles">
+            🏍️ Motocykly
+          </button>
+          <button type="button" class="admin-tab-btn" role="tab" aria-selected="false" aria-controls="admin-panel-manufacturers" id="tab-manufacturers">
+            🛡️ Výrobci
+          </button>
+        </aside>
+
+        <!-- Main Dashboard Content Area -->
+        <div class="admin-content-area">
+          
+          <!-- Tab Panel 1: Parts -->
+          <div id="admin-panel-parts" class="admin-tab-panel" role="tabpanel" aria-labelledby="tab-parts">
+            <div class="panel-header">
+              <h3>Přehled závodních dílů podle kategorií</h3>
+              <button type="button" id="admin-add-part-btn" class="btn btn-primary">➕ Přidat nový díl</button>
+            </div>
+            
+            <div id="admin-parts-categories-list" class="admin-categories-list">
+              <!-- Dynamically populated parts grouped by categories -->
+            </div>
+          </div>
+
+          <!-- Tab Panel 2: Motorcycles -->
+          <div id="admin-panel-motorcycles" class="admin-tab-panel hidden" role="tabpanel" aria-labelledby="tab-motorcycles">
+            <div class="panel-header">
+              <h3>Správa závodních motocyklů</h3>
+              <button type="button" id="admin-add-moto-btn" class="btn btn-primary">➕ Přidat motocykl</button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Značka</th>
+                    <th>Model</th>
+                    <th>Roky výroby</th>
+                    <th>Objem motoru</th>
+                    <th>Třída</th>
+                    <th class="table-actions-col">Akce</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-motos-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab Panel 3: Manufacturers -->
+          <div id="admin-panel-manufacturers" class="admin-tab-panel hidden" role="tabpanel" aria-labelledby="tab-manufacturers">
+            <div class="panel-header">
+              <h3>Správa výrobců závodních dílů</h3>
+              <button type="button" id="admin-add-mfg-btn" class="btn btn-primary">➕ Přidat výrobce</button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Název</th>
+                    <th>Země původu</th>
+                    <th>Webová stránka</th>
+                    <th>Popis</th>
+                    <th class="table-actions-col">Akce</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-mfgs-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- Detailed Modal for Part Details -->
@@ -228,6 +319,20 @@
           <div class="form-field">
             <label for="form-part-url">Odkaz na produkt (URL)*</label>
             <input type="url" id="form-part-url" required placeholder="https://example.com/product">
+          </div>
+        </div>
+        
+        <div class="form-field-image-upload" style="margin-top: 16px;">
+          <span class="form-field-label">Obrázek produktu (JPEG/PNG, automatická komprese)</span>
+          <div class="file-upload-wrapper" style="margin-top: 8px;">
+            <input type="file" id="form-part-image" accept="image/png, image/jpeg, image/webp" class="visually-hidden">
+            <label for="form-part-image" class="file-upload-btn">
+              <span>📁 Vybrat obrázek z počítače</span>
+            </label>
+            <button type="button" id="form-part-image-clear-btn" class="btn btn-secondary hidden">Smazat obrázek</button>
+          </div>
+          <div id="form-part-image-preview-container" class="image-preview-container hidden" style="margin-top: 10px;">
+            <img id="form-part-image-preview" src="" alt="Náhled obrázku" style="max-height: 120px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border);">
           </div>
         </div>
         

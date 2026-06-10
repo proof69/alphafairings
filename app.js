@@ -7,6 +7,7 @@ const state = {
   searchQuery: '',
   theme: 'dark',
   adminMode: false,
+  activeAdminTab: 'parts',
   parts: [],
   motorcycles: [],
   manufacturers: []
@@ -39,6 +40,32 @@ const addMotoBtn = document.getElementById('add-moto-btn');
 const addMfgBtn = document.getElementById('add-mfg-btn');
 const exportPartsBtn = document.getElementById('export-parts-btn');
 const resetPartsBtn = document.getElementById('reset-parts-btn');
+
+// Admin Dashboard Elements
+const adminDashboard = document.getElementById('admin-dashboard');
+const tabParts = document.getElementById('tab-parts');
+const tabMotorcycles = document.getElementById('tab-motorcycles');
+const tabManufacturers = document.getElementById('tab-manufacturers');
+const panelParts = document.getElementById('admin-panel-parts');
+const panelMotorcycles = document.getElementById('admin-panel-motorcycles');
+const panelManufacturers = document.getElementById('admin-panel-manufacturers');
+const adminPartsCategoriesList = document.getElementById('admin-parts-categories-list');
+const adminMotosTableBody = document.getElementById('admin-motos-table-body');
+const adminMfgsTableBody = document.getElementById('admin-mfgs-table-body');
+
+// Admin Dashboard Action Triggers (inside dashboard)
+const adminAddPartBtn = document.getElementById('admin-add-part-btn');
+const adminAddMotoBtn = document.getElementById('admin-add-moto-btn');
+const adminAddMfgBtn = document.getElementById('admin-add-mfg-btn');
+
+// Image upload Elements
+const formPartImage = document.getElementById('form-part-image');
+const formPartImagePreview = document.getElementById('form-part-image-preview');
+const formPartImagePreviewContainer = document.getElementById('form-part-image-preview-container');
+const formPartImageClearBtn = document.getElementById('form-part-image-clear-btn');
+
+// Temporary image storage
+let currentPartImageBase64 = null;
 
 // Login Dialog elements
 const loginDialog = document.getElementById('login-dialog');
@@ -200,6 +227,7 @@ function setAdminMode(active) {
     adminToggle.querySelector('.admin-lock-icon').textContent = '🔓';
     adminToggle.querySelector('.admin-text').textContent = 'Odhlásit se';
     adminControlsBar.classList.remove('hidden');
+    renderAdminDashboard();
   } else {
     document.body.classList.remove('admin-mode-active');
     adminToggle.classList.remove('active');
@@ -462,12 +490,22 @@ function renderParts() {
       </div>
     ` : '';
     
+    const imgSectionHTML = `
+      <div class="part-card-image">
+        ${part.image ? 
+          `<img src="${part.image}" alt="${part.name}" loading="lazy">` : 
+          `<div class="part-card-image-placeholder">${cat ? cat.icon : '🏍️'}</div>`
+        }
+      </div>
+    `;
+
     card.innerHTML = `
       ${adminActionsHTML}
       <div class="part-card-header">
         <span class="part-card-category">${catLabel}</span>
         <span class="part-card-brand" data-mfg-id="${part.manufacturerId}">${mfgName}</span>
       </div>
+      ${imgSectionHTML}
       <h3 class="part-card-title">${part.name}</h3>
       <div class="part-card-sku">SKU: ${part.sku}</div>
       <p class="part-card-desc">${part.description}</p>
@@ -627,6 +665,11 @@ function showPartDetailModal(partId) {
     </div>
     
     <div class="dialog-detail-body">
+      ${part.image ? `
+      <div class="dialog-detail-image">
+        <img src="${part.image}" alt="${part.name}">
+      </div>
+      ` : ''}
       <h3>Popis produktu</h3>
       <p>${part.description}</p>
       
@@ -763,11 +806,22 @@ function openPartForm(partId = null) {
         addSpecRow(key, value);
       });
     }
+
+    // Image loading
+    if (part.image) {
+      currentPartImageBase64 = part.image;
+      formPartImagePreview.src = part.image;
+      formPartImagePreviewContainer.classList.remove('hidden');
+      formPartImageClearBtn.classList.remove('hidden');
+    } else {
+      clearPartImage();
+    }
   } else {
     // Create mode
     editPartId.value = '';
     formDialogTitle.textContent = "Nový závodní díl";
     addSpecRow(); // Add one empty row as template
+    clearPartImage();
   }
   
   partFormDialog.showModal();
@@ -820,7 +874,8 @@ function savePartForm() {
     price: formPartPrice.value.trim(),
     description: formPartDesc.value.trim(),
     productUrl: formPartUrl.value.trim(),
-    specs: specs
+    specs: specs,
+    image: currentPartImageBase64
   };
   
   if (editPartId.value) {
@@ -835,8 +890,12 @@ function savePartForm() {
   }
   
   saveParts();
+  clearPartImage();
   partFormDialog.close();
   renderParts();
+  if (state.adminMode) {
+    renderAdminDashboard();
+  }
 }
 
 function deletePart(partId) {
@@ -847,6 +906,9 @@ function deletePart(partId) {
     state.parts = state.parts.filter(p => p.id !== partId);
     saveParts();
     renderParts();
+    if (state.adminMode) {
+      renderAdminDashboard();
+    }
   }
 }
 
@@ -900,6 +962,9 @@ function saveMotoForm() {
   saveMotorcycles();
   motoFormDialog.close();
   renderMotoSelectors();
+  if (state.adminMode) {
+    renderAdminDashboard();
+  }
 }
 
 function deleteMotorcycle(motoId) {
@@ -925,6 +990,9 @@ function deleteMotorcycle(motoId) {
     renderMotoSelectors();
     updateActiveFiltersBar();
     renderParts();
+    if (state.adminMode) {
+      renderAdminDashboard();
+    }
   }
 }
 
@@ -989,6 +1057,9 @@ function saveMfgForm() {
   mfgFormDialog.close();
   renderManufacturers();
   renderParts();
+  if (state.adminMode) {
+    renderAdminDashboard();
+  }
 }
 
 function deleteManufacturer(mfgId) {
@@ -1006,6 +1077,9 @@ function deleteManufacturer(mfgId) {
     
     renderManufacturers();
     renderParts();
+    if (state.adminMode) {
+      renderAdminDashboard();
+    }
   }
 }
 
@@ -1042,7 +1116,219 @@ function resetParts() {
     renderMotoSelectors();
     renderManufacturers();
     renderParts();
+    if (state.adminMode) {
+      renderAdminDashboard();
+    }
   }
+}
+
+// Admin Dashboard rendering
+function renderAdminDashboard() {
+  if (!state.adminMode) return;
+  
+  if (state.activeAdminTab === 'parts') {
+    renderAdminParts();
+  } else if (state.activeAdminTab === 'motorcycles') {
+    renderAdminMotorcycles();
+  } else if (state.activeAdminTab === 'manufacturers') {
+    renderAdminManufacturers();
+  }
+}
+
+function renderAdminParts() {
+  adminPartsCategoriesList.innerHTML = '';
+  
+  CATEGORIES.forEach(cat => {
+    const group = document.createElement('div');
+    group.className = 'admin-category-group';
+    
+    const catParts = state.parts.filter(p => p.category === cat.id);
+    
+    let partsHTML = '';
+    if (catParts.length === 0) {
+      partsHTML = `<div style="padding: 20px; text-align: center; color: var(--color-text-muted); font-size: 0.95rem;">Žádné díly v této kategorii.</div>`;
+    } else {
+      partsHTML = `
+        <div class="admin-parts-list">
+          ${catParts.map(part => {
+            const mfg = state.manufacturers.find(m => m.id === part.manufacturerId);
+            const mfgName = mfg ? mfg.name : part.manufacturerId;
+            const imgHTML = part.image ? `<img src="${part.image}" alt="${part.name}">` : `<span>${cat.icon}</span>`;
+            
+            return `
+              <div class="admin-part-row" data-id="${part.id}">
+                <div class="admin-part-thumb">${imgHTML}</div>
+                <div class="admin-part-info">
+                  <div class="part-name">${part.name}</div>
+                  <div class="part-meta">
+                    <span>Výrobce: <strong>${mfgName}</strong></span>
+                    <span>Kompatibilita: <strong>${part.compatibilities.map(compId => {
+                      const bike = state.motorcycles.find(m => m.id === compId);
+                      return bike ? bike.model : compId;
+                    }).join(', ')}</strong></span>
+                  </div>
+                </div>
+                <div class="admin-part-price-sku">
+                  <div class="part-price">${part.price}</div>
+                  <div class="part-sku">SKU: ${part.sku}</div>
+                </div>
+                <div class="admin-part-actions">
+                  <button type="button" class="btn btn-secondary edit-part-row-btn" data-id="${part.id}">✏️ Upravit</button>
+                  <button type="button" class="btn btn-secondary delete-btn delete-part-row-btn" data-id="${part.id}">🗑️ Smazat</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+    
+    group.innerHTML = `
+      <div class="admin-category-header">
+        <h4>${cat.icon} ${cat.name}</h4>
+      </div>
+      ${partsHTML}
+    `;
+    
+    if (catParts.length > 0) {
+      group.querySelectorAll('.edit-part-row-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openPartForm(btn.getAttribute('data-id'));
+        });
+      });
+      group.querySelectorAll('.delete-part-row-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          deletePart(btn.getAttribute('data-id'));
+        });
+      });
+    }
+    
+    adminPartsCategoriesList.appendChild(group);
+  });
+}
+
+function renderAdminMotorcycles() {
+  adminMotosTableBody.innerHTML = '';
+  
+  if (state.motorcycles.length === 0) {
+    adminMotosTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--color-text-muted);">Žádné motocykly v databázi.</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  state.motorcycles.forEach(bike => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${bike.brand}</strong></td>
+      <td>${bike.model}</td>
+      <td>${bike.year}</td>
+      <td>${bike.engine}</td>
+      <td>${bike.class}</td>
+      <td class="table-actions-col">
+        <div class="admin-part-actions">
+          <button type="button" class="admin-icon-btn edit-moto-row-btn" data-id="${bike.id}">✏️</button>
+          <button type="button" class="admin-icon-btn delete-btn delete-moto-row-btn" data-id="${bike.id}">🗑️</button>
+        </div>
+      </td>
+    `;
+    
+    tr.querySelector('.edit-moto-row-btn').addEventListener('click', () => openMotoForm(bike.id));
+    tr.querySelector('.delete-moto-row-btn').addEventListener('click', () => deleteMotorcycle(bike.id));
+    
+    adminMotosTableBody.appendChild(tr);
+  });
+}
+
+function renderAdminManufacturers() {
+  adminMfgsTableBody.innerHTML = '';
+  
+  if (state.manufacturers.length === 0) {
+    adminMfgsTableBody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align: center; color: var(--color-text-muted);">Žádní výrobci v databázi.</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  state.manufacturers.forEach(mfg => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${mfg.name}</strong></td>
+      <td>${mfg.origin}</td>
+      <td><a href="${mfg.url}" target="_blank" rel="noopener noreferrer" style="color: var(--color-red-accent); text-decoration: underline;">web ↗</a></td>
+      <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${mfg.description}</td>
+      <td class="table-actions-col">
+        <div class="admin-part-actions">
+          <button type="button" class="admin-icon-btn edit-mfg-row-btn" data-id="${mfg.id}">✏️</button>
+          <button type="button" class="admin-icon-btn delete-btn delete-mfg-row-btn" data-id="${mfg.id}">🗑️</button>
+        </div>
+      </td>
+    `;
+    
+    tr.querySelector('.edit-mfg-row-btn').addEventListener('click', () => openMfgForm(mfg.id));
+    tr.querySelector('.delete-mfg-row-btn').addEventListener('click', () => deleteManufacturer(mfg.id));
+    
+    adminMfgsTableBody.appendChild(tr);
+  });
+}
+
+// Image Upload Processing
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    alert('Prosím vyberte platný obrázek.');
+    return;
+  }
+
+  compressImage(file, (compressedBase64) => {
+    currentPartImageBase64 = compressedBase64;
+    formPartImagePreview.src = compressedBase64;
+    formPartImagePreviewContainer.classList.remove('hidden');
+    formPartImageClearBtn.classList.remove('hidden');
+  });
+}
+
+function clearPartImage() {
+  formPartImage.value = '';
+  currentPartImageBase64 = null;
+  formPartImagePreview.src = '';
+  formPartImagePreviewContainer.classList.add('hidden');
+  formPartImageClearBtn.classList.add('hidden');
+}
+
+function compressImage(file, callback) {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function (event) {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = Math.round((height * MAX_WIDTH) / width);
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      callback(compressedDataUrl);
+    };
+  };
 }
 
 // Event Listeners Setup
@@ -1080,6 +1366,36 @@ function setupEventListeners() {
   // Export/Reset triggers
   exportPartsBtn.addEventListener('click', exportPartsJSON);
   resetPartsBtn.addEventListener('click', resetParts);
+
+  // Tab Switching inside Admin Dashboard
+  const adminTabs = [
+    { button: tabParts, panel: panelParts, tabName: 'parts' },
+    { button: tabMotorcycles, panel: panelMotorcycles, tabName: 'motorcycles' },
+    { button: tabManufacturers, panel: panelManufacturers, tabName: 'manufacturers' }
+  ];
+
+  adminTabs.forEach(tabInfo => {
+    tabInfo.button.addEventListener('click', () => {
+      state.activeAdminTab = tabInfo.tabName;
+      
+      adminTabs.forEach(t => {
+        t.button.classList.toggle('active', t === tabInfo);
+        t.button.setAttribute('aria-selected', t === tabInfo);
+        t.panel.classList.toggle('hidden', t !== tabInfo);
+      });
+      
+      renderAdminDashboard();
+    });
+  });
+
+  // Image Upload Listeners
+  formPartImage.addEventListener('change', handleImageUpload);
+  formPartImageClearBtn.addEventListener('click', clearPartImage);
+
+  // Add triggers inside dashboard
+  adminAddPartBtn.addEventListener('click', () => openPartForm());
+  adminAddMotoBtn.addEventListener('click', () => openMotoForm());
+  adminAddMfgBtn.addEventListener('click', () => openMfgForm());
   
   // Parts Form Submission
   partEditorForm.addEventListener('submit', (e) => {

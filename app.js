@@ -150,6 +150,11 @@ function loadData() {
   if (localMotos) {
     try {
       state.motorcycles = JSON.parse(localMotos);
+      // Auto-migrate if the user has old dataset (less than 15 brands)
+      if (state.motorcycles.length < MOTORCYCLES.length) {
+        state.motorcycles = [...MOTORCYCLES];
+        saveMotorcycles();
+      }
     } catch (e) {
       console.error("Chyba při načítání motocyklů:", e);
       state.motorcycles = [...MOTORCYCLES];

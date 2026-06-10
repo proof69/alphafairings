@@ -17,7 +17,17 @@ export const MOTORCYCLES = [
   { id: 'ducati-panigale-v4', brand: 'Ducati', model: 'Panigale V4 R', year: '2021-2024', engine: '998cc', class: 'Superbike' },
   { id: 'kawasaki-zx10r', brand: 'Kawasaki', model: 'Ninja ZX-10RR', year: '2021-2024', engine: '998cc', class: 'Superbike' },
   { id: 'bmw-s1000rr', brand: 'BMW', model: 'S 1000 RR / M 1000 RR', year: '2019-2024', engine: '999cc', class: 'Superbike' },
-  { id: 'honda-cbr1000rr', brand: 'Honda', model: 'CBR1000RR-R Fireblade SP', year: '2020-2024', engine: '999cc', class: 'Superbike' }
+  { id: 'honda-cbr1000rr', brand: 'Honda', model: 'CBR1000RR-R Fireblade SP', year: '2020-2024', engine: '999cc', class: 'Superbike' },
+  { id: 'aprilia-rsv4', brand: 'Aprilia', model: 'RSV4 Factory 1100', year: '2021-2024', engine: '1099cc', class: 'Superbike' },
+  { id: 'cagiva-mito', brand: 'Cagiva', model: 'Mito SP525', year: '2008-2012', engine: '125cc', class: 'Supersport' },
+  { id: 'ktm-rc8c', brand: 'KTM', model: 'RC 8C', year: '2023-2024', engine: '889cc', class: 'Prototype / Superbike' },
+  { id: 'suzuki-gsxr', brand: 'Suzuki', model: 'GSX-R1000R', year: '2020-2024', engine: '1000cc', class: 'Superbike' },
+  { id: 'triumph-daytona', brand: 'Triumph', model: 'Daytona Moto2 765', year: '2020-2022', engine: '765cc', class: 'Supersport' },
+  { id: 'buell-1125r', brand: 'Buell', model: '1125R / 1190RX', year: '2009-2016', engine: '1125cc', class: 'Superbike' },
+  { id: 'bimota-kb4', brand: 'Bimota', model: 'KB4', year: '2022-2024', engine: '1043cc', class: 'Superbike' },
+  { id: 'metrakit-gp80', brand: 'Metrakit', model: 'GP 80 SP', year: '2015-2020', engine: '80cc', class: 'Youth Racer' },
+  { id: 'moriwaki-md250', brand: 'Moriwaki', model: 'MD250H', year: '2010-2015', engine: '250cc', class: 'GP250' },
+  { id: 'mv-agusta-f4', brand: 'MV Agusta', model: 'F4 RR', year: '2019-2023', engine: '998cc', class: 'Superbike' }
 ];
 
 export const MANUFACTURERS = [

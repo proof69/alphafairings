@@ -343,8 +343,13 @@
         
         <div class="form-field" style="margin-top: 16px;">
           <span class="form-field-label">Kompatibilní motocykly* (vyberte alespoň jeden)</span>
-          <div id="form-compat-grid" class="form-checkbox-grid">
-            <!-- Populated dynamically -->
+          
+          <div class="compat-search-box-wrapper" style="margin-top: 8px; margin-bottom: 12px;">
+            <input type="text" id="form-compat-search" placeholder="Rychlé hledání modelu (např. R1, 2023...)" style="font-size: 0.9rem; padding: 6px 12px; width: 100%; min-height: 36px; border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background-color: var(--color-bg-base); color: var(--color-text-primary);">
+          </div>
+          
+          <div id="form-compat-accordion" class="form-compat-accordion">
+            <!-- Populated dynamically in app.js: grouped by brand and collapsible -->
           </div>
         </div>
         

@@ -88,7 +88,8 @@ const formPartManufacturer = document.getElementById('form-part-manufacturer');
 const formPartPrice = document.getElementById('form-part-price');
 const formPartUrl = document.getElementById('form-part-url');
 const formPartDesc = document.getElementById('form-part-desc');
-const formCompatGrid = document.getElementById('form-compat-grid');
+const formCompatAccordion = document.getElementById('form-compat-accordion');
+const formCompatSearch = document.getElementById('form-compat-search');
 const formSpecsContainer = document.getElementById('form-specs-container');
 const addSpecRowBtn = document.getElementById('add-spec-row-btn');
 const formDialogTitle = document.getElementById('form-dialog-title');
@@ -788,20 +789,81 @@ function openPartForm(partId = null) {
     formPartManufacturer.innerHTML += `<option value="${mfg.id}">${mfg.name}</option>`;
   });
   
-  // Populate compatibilities checkboxes from state.motorcycles
-  formCompatGrid.innerHTML = '';
+  // Clear compatibility search input and accordion
+  formCompatSearch.value = '';
+  formCompatAccordion.innerHTML = '';
+  
+  // Group motorcycles by brand
+  const groupedMotos = {};
   state.motorcycles.forEach(bike => {
-    const label = document.createElement('label');
-    label.innerHTML = `
-      <input type="checkbox" name="compatibilities" value="${bike.id}">
-      <span>${bike.brand} ${bike.model}</span>
+    if (!groupedMotos[bike.brand]) {
+      groupedMotos[bike.brand] = [];
+    }
+    groupedMotos[bike.brand].push(bike);
+  });
+  
+  // Sort brands alphabetically
+  const sortedBrands = Object.keys(groupedMotos).sort();
+  
+  // Gather compatibilities if in edit mode (to auto-expand groups containing checked models)
+  const part = partId ? state.parts.find(p => p.id === partId) : null;
+  const compatSet = new Set(part ? part.compatibilities : []);
+  
+  sortedBrands.forEach(brand => {
+    const brandBikes = groupedMotos[brand];
+    const hasActiveCompat = brandBikes.some(b => compatSet.has(b.id));
+    
+    const brandGroup = document.createElement('div');
+    brandGroup.className = `compat-brand-group ${hasActiveCompat ? '' : 'collapsed'}`;
+    
+    const header = document.createElement('div');
+    header.className = 'compat-brand-header';
+    header.innerHTML = `
+      <span class="brand-title">
+        <span class="brand-toggle-indicator">▼</span>
+        <span>${brand} (${brandBikes.length})</span>
+      </span>
+      <span class="brand-actions">
+        <span class="brand-action-link select-all-btn">Vše</span>
+        <span class="brand-action-link clear-all-btn">Nic</span>
+      </span>
     `;
-    formCompatGrid.appendChild(label);
+    
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.brand-action-link')) return;
+      brandGroup.classList.toggle('collapsed');
+    });
+    
+    header.querySelector('.select-all-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      brandGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    });
+    
+    header.querySelector('.clear-all-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      brandGroup.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    });
+    
+    const grid = document.createElement('div');
+    grid.className = 'compat-models-grid';
+    
+    brandBikes.forEach(bike => {
+      const label = document.createElement('label');
+      label.className = 'compat-model-label';
+      label.innerHTML = `
+        <input type="checkbox" name="compatibilities" value="${bike.id}">
+        <span>${bike.model} (${bike.year})</span>
+      `;
+      grid.appendChild(label);
+    });
+    
+    brandGroup.appendChild(header);
+    brandGroup.appendChild(grid);
+    formCompatAccordion.appendChild(brandGroup);
   });
   
   if (partId) {
     // Edit mode
-    const part = state.parts.find(p => p.id === partId);
     if (!part) return;
     
     editPartId.value = part.id;
@@ -817,7 +879,7 @@ function openPartForm(partId = null) {
     
     // Check compatible checkboxes
     part.compatibilities.forEach(id => {
-      const checkbox = formCompatGrid.querySelector(`input[value="${id}"]`);
+      const checkbox = formCompatAccordion.querySelector(`input[value="${id}"]`);
       if (checkbox) checkbox.checked = true;
     });
     
@@ -866,7 +928,7 @@ function addSpecRow(key = '', value = '') {
 
 function savePartForm() {
   // Check checkboxes
-  const checkboxes = formCompatGrid.querySelectorAll('input[name="compatibilities"]:checked');
+  const checkboxes = formCompatAccordion.querySelectorAll('input[name="compatibilities"]:checked');
   if (checkboxes.length === 0) {
     alert('Prosím, zvolte alespoň jeden kompatibilní motocykl.');
     return;
@@ -1352,6 +1414,35 @@ function compressImage(file, callback) {
   };
 }
 
+function filterCompatAccordion() {
+  const query = formCompatSearch.value.toLowerCase().trim();
+  const groups = formCompatAccordion.querySelectorAll('.compat-brand-group');
+  
+  groups.forEach(group => {
+    const labels = group.querySelectorAll('.compat-model-label');
+    let visibleCount = 0;
+    
+    labels.forEach(label => {
+      const text = label.textContent.toLowerCase();
+      if (query === '' || text.includes(query)) {
+        label.classList.remove('hidden');
+        visibleCount++;
+      } else {
+        label.classList.add('hidden');
+      }
+    });
+    
+    if (visibleCount > 0) {
+      group.classList.remove('hidden');
+      if (query !== '') {
+        group.classList.remove('collapsed');
+      }
+    } else {
+      group.classList.add('hidden');
+    }
+  });
+}
+
 // Event Listeners Setup
 function setupEventListeners() {
   // Real-time Search
@@ -1387,6 +1478,9 @@ function setupEventListeners() {
   // Export/Reset triggers
   exportPartsBtn.addEventListener('click', exportPartsJSON);
   resetPartsBtn.addEventListener('click', resetParts);
+
+  // Compatibility Accordion Search
+  formCompatSearch.addEventListener('input', filterCompatAccordion);
 
   // Tab Switching inside Admin Dashboard
   const adminTabs = [

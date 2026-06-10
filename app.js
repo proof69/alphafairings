@@ -7,7 +7,9 @@ const state = {
   searchQuery: '',
   theme: 'dark',
   adminMode: false,
-  parts: [] // Loaded dynamically
+  parts: [],
+  motorcycles: [],
+  manufacturers: []
 };
 
 // DOM Elements
@@ -33,10 +35,20 @@ const dialogBody = document.getElementById('dialog-body');
 const adminToggle = document.getElementById('admin-toggle');
 const adminControlsBar = document.getElementById('admin-controls-bar');
 const addPartBtn = document.getElementById('add-part-btn');
+const addMotoBtn = document.getElementById('add-moto-btn');
+const addMfgBtn = document.getElementById('add-mfg-btn');
 const exportPartsBtn = document.getElementById('export-parts-btn');
 const resetPartsBtn = document.getElementById('reset-parts-btn');
 
-// Form Dialog elements
+// Login Dialog elements
+const loginDialog = document.getElementById('login-dialog');
+const closeLoginBtn = document.getElementById('close-login-btn');
+const loginForm = document.getElementById('login-form');
+const loginUsernameInput = document.getElementById('login-username');
+const loginPasswordInput = document.getElementById('login-password');
+const loginErrorMsg = document.getElementById('login-error-msg');
+
+// Part Form Dialog elements
 const partFormDialog = document.getElementById('part-form-dialog');
 const closeFormDialogBtn = document.getElementById('close-form-dialog-btn');
 const cancelFormBtn = document.getElementById('cancel-form-btn');
@@ -54,10 +66,36 @@ const formSpecsContainer = document.getElementById('form-specs-container');
 const addSpecRowBtn = document.getElementById('add-spec-row-btn');
 const formDialogTitle = document.getElementById('form-dialog-title');
 
+// Motorcycle Form Dialog elements
+const motoFormDialog = document.getElementById('moto-form-dialog');
+const closeMotoFormBtn = document.getElementById('close-moto-form-btn');
+const cancelMotoFormBtn = document.getElementById('cancel-moto-form-btn');
+const motoEditorForm = document.getElementById('moto-editor-form');
+const editMotoId = document.getElementById('edit-moto-id');
+const formMotoBrand = document.getElementById('form-moto-brand');
+const formMotoModel = document.getElementById('form-moto-model');
+const formMotoYear = document.getElementById('form-moto-year');
+const formMotoEngine = document.getElementById('form-moto-engine');
+const formMotoClass = document.getElementById('form-moto-class');
+const motoFormTitle = document.getElementById('moto-form-title');
+
+// Manufacturer Form Dialog elements
+const mfgFormDialog = document.getElementById('mfg-form-dialog');
+const closeMfgFormBtn = document.getElementById('close-mfg-form-btn');
+const cancelMfgFormBtn = document.getElementById('cancel-mfg-form-btn');
+const mfgEditorForm = document.getElementById('mfg-editor-form');
+const editMfgId = document.getElementById('edit-mfg-id');
+const formMfgName = document.getElementById('form-mfg-name');
+const formMfgOrigin = document.getElementById('form-mfg-origin');
+const formMfgUrl = document.getElementById('form-mfg-url');
+const formMfgDesc = document.getElementById('form-mfg-desc');
+const mfgFormTitle = document.getElementById('mfg-form-title');
+
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  loadParts();
+  loadData();
+  initAdminSession();
   renderMotoSelectors();
   renderCategorySelectors();
   renderManufacturers();
@@ -65,23 +103,58 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
-// Load / Save Parts from LocalStorage
-function loadParts() {
+// Load / Save dynamic lists from LocalStorage
+function loadData() {
+  // Parts
   const localParts = localStorage.getItem('parts');
   if (localParts) {
     try {
       state.parts = JSON.parse(localParts);
     } catch (e) {
-      console.error("Chyba při parsování dílů z localStorage:", e);
+      console.error("Chyba při načítání dílů:", e);
       state.parts = [...PARTS];
     }
   } else {
     state.parts = [...PARTS];
   }
+
+  // Motorcycles
+  const localMotos = localStorage.getItem('motorcycles');
+  if (localMotos) {
+    try {
+      state.motorcycles = JSON.parse(localMotos);
+    } catch (e) {
+      console.error("Chyba při načítání motocyklů:", e);
+      state.motorcycles = [...MOTORCYCLES];
+    }
+  } else {
+    state.motorcycles = [...MOTORCYCLES];
+  }
+
+  // Manufacturers
+  const localMfgs = localStorage.getItem('manufacturers');
+  if (localMfgs) {
+    try {
+      state.manufacturers = JSON.parse(localMfgs);
+    } catch (e) {
+      console.error("Chyba při načítání výrobců:", e);
+      state.manufacturers = [...MANUFACTURERS];
+    }
+  } else {
+    state.manufacturers = [...MANUFACTURERS];
+  }
 }
 
 function saveParts() {
   localStorage.setItem('parts', JSON.stringify(state.parts));
+}
+
+function saveMotorcycles() {
+  localStorage.setItem('motorcycles', JSON.stringify(state.motorcycles));
+}
+
+function saveManufacturers() {
+  localStorage.setItem('manufacturers', JSON.stringify(state.manufacturers));
 }
 
 // Theme Management
@@ -97,15 +170,35 @@ function toggleTheme() {
   localStorage.setItem('theme', state.theme);
 }
 
-// Admin Mode Management
-function toggleAdminMode() {
-  state.adminMode = !state.adminMode;
-  
+// Admin Session Management
+function initAdminSession() {
+  const isLoggedIn = sessionStorage.getItem('adminLoggedIn') === 'true';
+  if (isLoggedIn) {
+    setAdminMode(true);
+  }
+}
+
+function handleAdminToggleClick() {
   if (state.adminMode) {
+    // Log out
+    setAdminMode(false);
+    sessionStorage.removeItem('adminLoggedIn');
+  } else {
+    // Show login form
+    loginForm.reset();
+    loginErrorMsg.classList.add('hidden');
+    loginDialog.showModal();
+  }
+}
+
+function setAdminMode(active) {
+  state.adminMode = active;
+  
+  if (active) {
     document.body.classList.add('admin-mode-active');
     adminToggle.classList.add('active');
     adminToggle.querySelector('.admin-lock-icon').textContent = '🔓';
-    adminToggle.querySelector('.admin-text').textContent = 'Odejít z administrace';
+    adminToggle.querySelector('.admin-text').textContent = 'Odhlásit se';
     adminControlsBar.classList.remove('hidden');
   } else {
     document.body.classList.remove('admin-mode-active');
@@ -115,7 +208,23 @@ function toggleAdminMode() {
     adminControlsBar.classList.add('hidden');
   }
   
-  renderParts(); // Re-render to show/hide edit buttons on cards
+  // Re-render components to show/hide edit tools
+  renderMotoSelectors();
+  renderManufacturers();
+  renderParts();
+}
+
+function handleLoginSubmit() {
+  const username = loginUsernameInput.value.trim();
+  const password = loginPasswordInput.value;
+  
+  if (username === 'Lukas69' && password === 'Moto69*') {
+    setAdminMode(true);
+    sessionStorage.setItem('adminLoggedIn', 'true');
+    loginDialog.close();
+  } else {
+    loginErrorMsg.classList.remove('hidden');
+  }
 }
 
 // Render Filters and Selectors
@@ -136,13 +245,23 @@ function renderMotoSelectors() {
   });
   motoSelector.appendChild(allCard);
   
-  // Custom motorcycle cards
-  MOTORCYCLES.forEach(bike => {
+  // Custom motorcycle cards from state.motorcycles
+  state.motorcycles.forEach(bike => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = `moto-card ${state.selectedMotorcycle === bike.id ? 'active' : ''}`;
     card.setAttribute('aria-pressed', state.selectedMotorcycle === bike.id);
+    
+    // Admin buttons HTML
+    const adminActionsHTML = state.adminMode ? `
+      <div class="moto-card-admin-actions">
+        <button type="button" class="admin-icon-btn edit-moto-btn" data-moto-id="${bike.id}" aria-label="Upravit motocykl">✏️</button>
+        <button type="button" class="admin-icon-btn delete-btn delete-moto-btn" data-moto-id="${bike.id}" aria-label="Smazat motocykl">🗑️</button>
+      </div>
+    ` : '';
+    
     card.innerHTML = `
+      ${adminActionsHTML}
       <div class="moto-brand">${bike.brand}</div>
       <div class="moto-model" title="${bike.model}">${bike.model}</div>
       <div class="moto-meta">
@@ -150,9 +269,24 @@ function renderMotoSelectors() {
         <span>${bike.engine}</span>
       </div>
     `;
-    card.addEventListener('click', () => {
+    
+    // Select bike unless admin button is clicked
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.moto-card-admin-actions')) return;
       selectMotorcycle(bike.id);
     });
+    
+    if (state.adminMode) {
+      card.querySelector('.edit-moto-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMotoForm(bike.id);
+      });
+      card.querySelector('.delete-moto-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteMotorcycle(bike.id);
+      });
+    }
+    
     motoSelector.appendChild(card);
   });
 }
@@ -205,7 +339,7 @@ function updateActiveFiltersBar() {
   const activeFilters = [];
   
   if (state.selectedMotorcycle !== 'all') {
-    const bike = MOTORCYCLES.find(m => m.id === state.selectedMotorcycle);
+    const bike = state.motorcycles.find(m => m.id === state.selectedMotorcycle);
     if (bike) {
       activeFilters.push({
         type: 'motorcycle',
@@ -276,7 +410,7 @@ function renderParts() {
       
     // Text search filter
     const searchLower = state.searchQuery.toLowerCase().trim();
-    const manufacturer = MANUFACTURERS.find(m => m.id === part.manufacturerId);
+    const manufacturer = state.manufacturers.find(m => m.id === part.manufacturerId);
     const mfgName = manufacturer ? manufacturer.name.toLowerCase() : '';
     
     const matchesSearch = searchLower === '' || 
@@ -309,14 +443,14 @@ function renderParts() {
     const card = document.createElement('article');
     card.className = 'part-card';
     
-    const manufacturer = MANUFACTURERS.find(m => m.id === part.manufacturerId);
+    const manufacturer = state.manufacturers.find(m => m.id === part.manufacturerId);
     const mfgName = manufacturer ? manufacturer.name : part.manufacturerId;
     const cat = CATEGORIES.find(c => c.id === part.category);
     const catLabel = cat ? `${cat.icon} ${cat.name}` : part.category;
     
     // Create compatibility badge lists
     const compatListHTML = part.compatibilities.map(compId => {
-      const bike = MOTORCYCLES.find(m => m.id === compId);
+      const bike = state.motorcycles.find(m => m.id === compId);
       return `<span class="compat-pill">${bike ? bike.model : compId}</span>`;
     }).join('');
     
@@ -391,11 +525,20 @@ function renderParts() {
 function renderManufacturers() {
   manufacturersGrid.innerHTML = '';
   
-  MANUFACTURERS.forEach(mfg => {
+  state.manufacturers.forEach(mfg => {
     const card = document.createElement('article');
     card.className = 'manufacturer-card';
     
+    // Admin buttons HTML
+    const adminActionsHTML = state.adminMode ? `
+      <div class="part-card-admin-actions">
+        <button type="button" class="admin-icon-btn edit-mfg-btn" data-mfg-id="${mfg.id}" aria-label="Upravit výrobce">✏️</button>
+        <button type="button" class="admin-icon-btn delete-btn delete-mfg-btn" data-mfg-id="${mfg.id}" aria-label="Smazat výrobce">🗑️</button>
+      </div>
+    ` : '';
+    
     card.innerHTML = `
+      ${adminActionsHTML}
       <div class="mfg-header">
         <h3>${mfg.name}</h3>
         <span class="mfg-origin">${mfg.origin}</span>
@@ -422,6 +565,17 @@ function renderManufacturers() {
       document.getElementById('catalog-section').scrollIntoView({ behavior: 'smooth' });
     });
     
+    if (state.adminMode) {
+      card.querySelector('.edit-mfg-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMfgForm(mfg.id);
+      });
+      card.querySelector('.delete-mfg-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteManufacturer(mfg.id);
+      });
+    }
+    
     manufacturersGrid.appendChild(card);
   });
 }
@@ -431,14 +585,14 @@ function showPartDetailModal(partId) {
   const part = state.parts.find(p => p.id === partId);
   if (!part) return;
   
-  const mfg = MANUFACTURERS.find(m => m.id === part.manufacturerId);
+  const mfg = state.manufacturers.find(m => m.id === part.manufacturerId);
   const mfgName = mfg ? mfg.name : part.manufacturerId;
   const cat = CATEGORIES.find(c => c.id === part.category);
   const catLabel = cat ? `${cat.icon} ${cat.name}` : part.category;
   
   // Map compatible bikes
   const compatListHTML = part.compatibilities.map(compId => {
-    const bike = MOTORCYCLES.find(m => m.id === compId);
+    const bike = state.motorcycles.find(m => m.id === compId);
     return `<span class="compat-pill">${bike ? `${bike.brand} ${bike.model} (${bike.year})` : compId}</span>`;
   }).join('');
   
@@ -503,7 +657,7 @@ function showPartDetailModal(partId) {
 }
 
 function showManufacturerModal(mfgId) {
-  const mfg = MANUFACTURERS.find(m => m.id === mfgId);
+  const mfg = state.manufacturers.find(m => m.id === mfgId);
   if (!mfg) return;
   
   dialogBody.innerHTML = `
@@ -554,25 +708,25 @@ function showManufacturerModal(mfgId) {
   detailDialog.showModal();
 }
 
-// Admin Form Management
+// Admin Form Management (Parts Form)
 function openPartForm(partId = null) {
   partEditorForm.reset();
   formSpecsContainer.innerHTML = '';
   
-  // Populate dropdowns
+  // Populate dropdowns from state lists
   formPartCategory.innerHTML = '<option value="" disabled selected>Vyberte kategorii</option>';
   CATEGORIES.forEach(cat => {
     formPartCategory.innerHTML += `<option value="${cat.id}">${cat.icon} ${cat.name}</option>`;
   });
   
   formPartManufacturer.innerHTML = '<option value="" disabled selected>Vyberte výrobce</option>';
-  MANUFACTURERS.forEach(mfg => {
+  state.manufacturers.forEach(mfg => {
     formPartManufacturer.innerHTML += `<option value="${mfg.id}">${mfg.name}</option>`;
   });
   
-  // Populate compatibilities checkboxes
+  // Populate compatibilities checkboxes from state.motorcycles
   formCompatGrid.innerHTML = '';
-  MOTORCYCLES.forEach(bike => {
+  state.motorcycles.forEach(bike => {
     const label = document.createElement('label');
     label.innerHTML = `
       <input type="checkbox" name="compatibilities" value="${bike.id}">
@@ -696,18 +850,181 @@ function deletePart(partId) {
   }
 }
 
-// Data Import / Export (JSON file download)
-function exportPartsJSON() {
-  // Construct the JSON structure
-  const jsonString = JSON.stringify(state.parts, null, 2);
+// Admin Form Management (Motorcycle Form)
+function openMotoForm(motoId = null) {
+  motoEditorForm.reset();
   
-  // Wrap into a downloadable blob
+  if (motoId) {
+    // Edit Mode
+    const bike = state.motorcycles.find(m => m.id === motoId);
+    if (!bike) return;
+    
+    editMotoId.value = bike.id;
+    motoFormTitle.textContent = "Upravit motocykl";
+    
+    formMotoBrand.value = bike.brand;
+    formMotoModel.value = bike.model;
+    formMotoYear.value = bike.year;
+    formMotoEngine.value = bike.engine;
+    formMotoClass.value = bike.class;
+  } else {
+    // Create Mode
+    editMotoId.value = '';
+    motoFormTitle.textContent = "Nový motocykl";
+  }
+  
+  motoFormDialog.showModal();
+}
+
+function saveMotoForm() {
+  const motoData = {
+    id: editMotoId.value || `moto-${Date.now()}`,
+    brand: formMotoBrand.value.trim(),
+    model: formMotoModel.value.trim(),
+    year: formMotoYear.value.trim(),
+    engine: formMotoEngine.value.trim(),
+    class: formMotoClass.value.trim()
+  };
+  
+  if (editMotoId.value) {
+    // Edit update
+    const index = state.motorcycles.findIndex(m => m.id === editMotoId.value);
+    if (index !== -1) {
+      state.motorcycles[index] = motoData;
+    }
+  } else {
+    // Add new
+    state.motorcycles.push(motoData);
+  }
+  
+  saveMotorcycles();
+  motoFormDialog.close();
+  renderMotoSelectors();
+}
+
+function deleteMotorcycle(motoId) {
+  const bike = state.motorcycles.find(m => m.id === motoId);
+  if (!bike) return;
+  
+  if (confirm(`Opravdu chcete smazat motocykl "${bike.brand} ${bike.model}"? Tím dojde k jeho odebrání ze seznamu kompatibilit všech dílů.`)) {
+    // Remove motorcycle
+    state.motorcycles = state.motorcycles.filter(m => m.id !== motoId);
+    saveMotorcycles();
+    
+    // Cascade removal in parts compatibilities list
+    state.parts.forEach(part => {
+      part.compatibilities = part.compatibilities.filter(id => id !== motoId);
+    });
+    saveParts();
+    
+    // Reset selected filter if it was this bike
+    if (state.selectedMotorcycle === motoId) {
+      state.selectedMotorcycle = 'all';
+    }
+    
+    renderMotoSelectors();
+    updateActiveFiltersBar();
+    renderParts();
+  }
+}
+
+// Admin Form Management (Manufacturer Form)
+function openMfgForm(mfgId = null) {
+  mfgEditorForm.reset();
+  
+  if (mfgId) {
+    const mfg = state.manufacturers.find(m => m.id === mfgId);
+    if (!mfg) return;
+    
+    editMfgId.value = mfg.id;
+    mfgFormTitle.textContent = "Upravit výrobce";
+    
+    formMfgName.value = mfg.name;
+    formMfgOrigin.value = mfg.origin;
+    formMfgUrl.value = mfg.url;
+    formMfgDesc.value = mfg.description;
+  } else {
+    editMfgId.value = '';
+    mfgFormTitle.textContent = "Nový výrobce";
+  }
+  
+  mfgFormDialog.showModal();
+}
+
+function saveMfgForm() {
+  const id = editMfgId.value || formMfgName.value.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+  
+  const mfgData = {
+    id: id,
+    name: formMfgName.value.trim(),
+    origin: formMfgOrigin.value.trim(),
+    url: formMfgUrl.value.trim(),
+    description: formMfgDesc.value.trim()
+  };
+  
+  if (editMfgId.value) {
+    // Edit update
+    const index = state.manufacturers.findIndex(m => m.id === editMfgId.value);
+    if (index !== -1) {
+      // Update parts manufacturer reference if the manufacturer ID changed
+      const oldId = editMfgId.value;
+      if (oldId !== id) {
+        state.parts.forEach(p => {
+          if (p.manufacturerId === oldId) p.manufacturerId = id;
+        });
+        saveParts();
+      }
+      state.manufacturers[index] = mfgData;
+    }
+  } else {
+    // Check duplication
+    if (state.manufacturers.some(m => m.id === id)) {
+      alert("Výrobce s tímto názvem již existuje!");
+      return;
+    }
+    state.manufacturers.push(mfgData);
+  }
+  
+  saveManufacturers();
+  mfgFormDialog.close();
+  renderManufacturers();
+  renderParts();
+}
+
+function deleteManufacturer(mfgId) {
+  const mfg = state.manufacturers.find(m => m.id === mfgId);
+  if (!mfg) return;
+  
+  if (confirm(`Opravdu chcete smazat výrobce "${mfg.name}" a VŠECHNY jeho přidružené díly? Tato operace je nevratná.`)) {
+    // Remove manufacturer
+    state.manufacturers = state.manufacturers.filter(m => m.id !== mfgId);
+    saveManufacturers();
+    
+    // Cascade delete parts of this manufacturer
+    state.parts = state.parts.filter(p => p.manufacturerId !== mfgId);
+    saveParts();
+    
+    renderManufacturers();
+    renderParts();
+  }
+}
+
+// Data Import / Export (Unified JSON file download)
+function exportPartsJSON() {
+  // Construct the unified data structure
+  const exportData = {
+    parts: state.parts,
+    motorcycles: state.motorcycles,
+    manufacturers: state.manufacturers
+  };
+  
+  const jsonString = JSON.stringify(exportData, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'moto-race-parts-data.json';
+  a.download = 'alphafairings-data-export.json';
   document.body.appendChild(a);
   a.click();
   
@@ -717,9 +1034,13 @@ function exportPartsJSON() {
 }
 
 function resetParts() {
-  if (confirm("Opravdu chcete obnovit katalog do výchozího stavu? Všechny vámi přidané a upravené díly budou nenávratně smazány.")) {
+  if (confirm("Opravdu chcete obnovit katalog do výchozího stavu? Všechny vámi přidané/upravené díly, motorky i výrobci budou smazáni.")) {
     localStorage.removeItem('parts');
-    loadParts();
+    localStorage.removeItem('motorcycles');
+    localStorage.removeItem('manufacturers');
+    loadData();
+    renderMotoSelectors();
+    renderManufacturers();
     renderParts();
   }
 }
@@ -737,60 +1058,105 @@ function setupEventListeners() {
   themeToggle.addEventListener('click', toggleTheme);
   
   // Admin Mode toggler
-  adminToggle.addEventListener('click', toggleAdminMode);
+  adminToggle.addEventListener('click', handleAdminToggleClick);
   
-  // Add Part Form Modal triggers
+  // Login Form Submission
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleLoginSubmit();
+  });
+  
+  // Close Login Modal
+  closeLoginBtn.addEventListener('click', () => {
+    loginDialog.close();
+  });
+  
+  // Add dialog form triggers
   addPartBtn.addEventListener('click', () => openPartForm());
   addSpecRowBtn.addEventListener('click', () => addSpecRow());
+  addMotoBtn.addEventListener('click', () => openMotoForm());
+  addMfgBtn.addEventListener('click', () => openMfgForm());
   
   // Export/Reset triggers
   exportPartsBtn.addEventListener('click', exportPartsJSON);
   resetPartsBtn.addEventListener('click', resetParts);
   
-  // Form submission
+  // Parts Form Submission
   partEditorForm.addEventListener('submit', (e) => {
     e.preventDefault();
     savePartForm();
   });
   
-  // Cancel Form
-  cancelFormBtn.addEventListener('click', () => {
-    partFormDialog.close();
+  // Motorcycle Form Submission
+  motoEditorForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveMotoForm();
   });
   
-  // Close Form Modal
-  closeFormDialogBtn.addEventListener('click', () => {
-    partFormDialog.close();
+  // Manufacturer Form Submission
+  mfgEditorForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveMfgForm();
   });
   
-  // Close dialog on button click
-  closeDialogBtn.addEventListener('click', () => {
-    detailDialog.close();
-  });
+  // Cancel Buttons
+  cancelFormBtn.addEventListener('click', () => partFormDialog.close());
+  cancelMotoFormBtn.addEventListener('click', () => motoFormDialog.close());
+  cancelMfgFormBtn.addEventListener('click', () => mfgFormDialog.close());
   
-  // Close dialog on backdrop click
+  // Close dialog buttons
+  closeFormDialogBtn.addEventListener('click', () => partFormDialog.close());
+  closeMotoFormBtn.addEventListener('click', () => motoFormDialog.close());
+  closeMfgFormBtn.addEventListener('click', () => mfgFormDialog.close());
+  
+  // Close dialogs on backdrop click
   detailDialog.addEventListener('click', (e) => {
     const dialogDimensions = detailDialog.getBoundingClientRect();
     if (
-      e.clientX < dialogDimensions.left ||
-      e.clientX > dialogDimensions.right ||
-      e.clientY < dialogDimensions.top ||
-      e.clientY > dialogDimensions.bottom
+      e.clientX < dialogDimensions.left || e.clientX > dialogDimensions.right ||
+      e.clientY < dialogDimensions.top || e.clientY > dialogDimensions.bottom
     ) {
       detailDialog.close();
     }
   });
   
-  // Close Form dialog on backdrop click
   partFormDialog.addEventListener('click', (e) => {
     const dialogDimensions = partFormDialog.getBoundingClientRect();
     if (
-      e.clientX < dialogDimensions.left ||
-      e.clientX > dialogDimensions.right ||
-      e.clientY < dialogDimensions.top ||
-      e.clientY > dialogDimensions.bottom
+      e.clientX < dialogDimensions.left || e.clientX > dialogDimensions.right ||
+      e.clientY < dialogDimensions.top || e.clientY > dialogDimensions.bottom
     ) {
       partFormDialog.close();
+    }
+  });
+  
+  motoFormDialog.addEventListener('click', (e) => {
+    const dialogDimensions = motoFormDialog.getBoundingClientRect();
+    if (
+      e.clientX < dialogDimensions.left || e.clientX > dialogDimensions.right ||
+      e.clientY < dialogDimensions.top || e.clientY > dialogDimensions.bottom
+    ) {
+      motoFormDialog.close();
+    }
+  });
+  
+  mfgFormDialog.addEventListener('click', (e) => {
+    const dialogDimensions = mfgFormDialog.getBoundingClientRect();
+    if (
+      e.clientX < dialogDimensions.left || e.clientX > dialogDimensions.right ||
+      e.clientY < dialogDimensions.top || e.clientY > dialogDimensions.bottom
+    ) {
+      mfgFormDialog.close();
+    }
+  });
+  
+  loginDialog.addEventListener('click', (e) => {
+    const dialogDimensions = loginDialog.getBoundingClientRect();
+    if (
+      e.clientX < dialogDimensions.left || e.clientX > dialogDimensions.right ||
+      e.clientY < dialogDimensions.top || e.clientY > dialogDimensions.bottom
+    ) {
+      loginDialog.close();
     }
   });
   

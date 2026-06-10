@@ -131,7 +131,9 @@
       <div id="admin-controls-bar" class="admin-controls-bar hidden">
         <div class="admin-bar-title">🛠️ Administrační panel:</div>
         <div class="admin-bar-actions">
-          <button type="button" id="add-part-btn" class="btn btn-primary">➕ Přidat nový díl</button>
+          <button type="button" id="add-part-btn" class="btn btn-primary">➕ Přidat díl</button>
+          <button type="button" id="add-moto-btn" class="btn btn-primary">➕ Přidat motocykl</button>
+          <button type="button" id="add-mfg-btn" class="btn btn-primary">➕ Přidat výrobce</button>
           <button type="button" id="export-parts-btn" class="btn btn-secondary">💾 Exportovat data (JSON)</button>
           <button type="button" id="reset-parts-btn" class="btn btn-secondary">🔄 Resetovat data</button>
         </div>
@@ -254,6 +256,121 @@
         <div class="dialog-footer-actions" style="margin-top: 30px;">
           <button type="button" id="cancel-form-btn" class="btn btn-secondary">Zrušit</button>
           <button type="submit" class="btn btn-primary">Uložit díl</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Login Dialog -->
+  <dialog id="login-dialog" class="detail-dialog" style="max-width: 400px;">
+    <div class="dialog-content" style="padding: 40px 30px 30px;">
+      <button id="close-login-btn" class="dialog-close-btn" aria-label="Zavřít přihlášení">✕</button>
+      <div class="dialog-detail-header" style="margin-bottom: 24px; border-bottom: none; padding-bottom: 0;">
+        <h2 style="font-size: 1.6rem; text-align: center; margin-bottom: 8px;">Přihlášení správce</h2>
+        <p style="text-align: center; font-size: 0.9rem; color: var(--color-text-secondary);">Pro vstup do administrace se přihlaste.</p>
+      </div>
+      
+      <form id="login-form" onsubmit="event.preventDefault();">
+        <div class="form-field" style="margin-bottom: 14px;">
+          <label for="login-username">Uživatelské jméno</label>
+          <input type="text" id="login-username" required placeholder="Jméno (Lukas69)" autocomplete="username">
+        </div>
+        <div class="form-field" style="margin-bottom: 20px;">
+          <label for="login-password">Heslo</label>
+          <input type="password" id="login-password" required placeholder="Heslo (Moto69*)" autocomplete="current-password">
+        </div>
+        <div id="login-error-msg" style="color: var(--color-red-accent); font-size: 0.88rem; margin-bottom: 16px; text-align: center; font-weight: 600;" class="hidden">
+          Nesprávné jméno nebo heslo!
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Přihlásit se</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Dialog for Motorcycle Add/Edit Form -->
+  <dialog id="moto-form-dialog" class="detail-dialog">
+    <div class="dialog-content">
+      <button id="close-moto-form-btn" class="dialog-close-btn" aria-label="Zavřít formulář">✕</button>
+      <div class="dialog-detail-header">
+        <h2 id="moto-form-title">Nový motocykl</h2>
+        <p>Zadejte parametry závodního motocyklu.</p>
+      </div>
+      
+      <form id="moto-editor-form" onsubmit="event.preventDefault();">
+        <input type="hidden" id="edit-moto-id" value="">
+        
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="form-moto-brand">Značka*</label>
+            <input type="text" id="form-moto-brand" required placeholder="Např. Ducati, Yamaha">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-moto-model">Model*</label>
+            <input type="text" id="form-moto-model" required placeholder="Např. Panigale V4 R, YZF-R1">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-moto-year">Roky výroby*</label>
+            <input type="text" id="form-moto-year" required placeholder="Např. 2020-2024">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-moto-engine">Objem motoru*</label>
+            <input type="text" id="form-moto-engine" required placeholder="Např. 998cc">
+          </div>
+          
+          <div class="form-field" style="grid-column: span 2;">
+            <label for="form-moto-class">Třída motocyklu*</label>
+            <input type="text" id="form-moto-class" required placeholder="Např. Superbike, Supersport">
+          </div>
+        </div>
+        
+        <div class="dialog-footer-actions" style="margin-top: 30px;">
+          <button type="button" id="cancel-moto-form-btn" class="btn btn-secondary">Zrušit</button>
+          <button type="submit" class="btn btn-primary">Uložit motocykl</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Dialog for Manufacturer Add/Edit Form -->
+  <dialog id="mfg-form-dialog" class="detail-dialog">
+    <div class="dialog-content">
+      <button id="close-mfg-form-btn" class="dialog-close-btn" aria-label="Zavřít formulář">✕</button>
+      <div class="dialog-detail-header">
+        <h2 id="mfg-form-title">Nový výrobce</h2>
+        <p>Zadejte detaily o výrobci závodních dílů.</p>
+      </div>
+      
+      <form id="mfg-editor-form" onsubmit="event.preventDefault();">
+        <input type="hidden" id="edit-mfg-id" value="">
+        
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="form-mfg-name">Název výrobce*</label>
+            <input type="text" id="form-mfg-name" required placeholder="Např. Brembo, Akrapovič">
+          </div>
+          
+          <div class="form-field">
+            <label for="form-mfg-origin">Země původu*</label>
+            <input type="text" id="form-mfg-origin" required placeholder="Např. Itálie, Slovinsko">
+          </div>
+          
+          <div class="form-field" style="grid-column: span 2;">
+            <label for="form-mfg-url">Oficiální webová stránka (URL)*</label>
+            <input type="url" id="form-mfg-url" required placeholder="https://www.brembo.com">
+          </div>
+        </div>
+        
+        <div class="form-field" style="margin-top: 16px;">
+          <label for="form-mfg-desc">Popis výrobce*</label>
+          <textarea id="form-mfg-desc" rows="3" required placeholder="Popište historii nebo hlavní zaměření výrobce..."></textarea>
+        </div>
+        
+        <div class="dialog-footer-actions" style="margin-top: 30px;">
+          <button type="button" id="cancel-mfg-form-btn" class="btn btn-secondary">Zrušit</button>
+          <button type="submit" class="btn btn-primary">Uložit výrobce</button>
         </div>
       </form>
     </div>

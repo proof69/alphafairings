@@ -1377,6 +1377,60 @@
       }
     }
   }
+
+  /* Admin actions for motorcycle cards and manufacturer cards */
+  .moto-card {
+    position: relative;
+  }
+  
+  .admin-mode-active .moto-card {
+    padding-top: 40px !important;
+  }
+
+  .manufacturer-card {
+    position: relative;
+  }
+  
+  .admin-mode-active .manufacturer-card {
+    padding-top: 44px !important;
+  }
+
+  .moto-card-admin-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+    
+    & .admin-icon-btn {
+      background-color: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+      box-shadow: var(--shadow-soft);
+      
+      &:hover {
+        transform: scale(1.1);
+        color: var(--color-text-primary);
+        border-color: var(--color-text-muted);
+      }
+      
+      &.delete-btn:hover {
+        background-color: var(--color-red-glow);
+        color: var(--color-red-accent);
+        border-color: var(--color-red-accent);
+      }
+    }
+  }
 }
 
 @layer utilities {

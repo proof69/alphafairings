@@ -142,6 +142,12 @@ function loadData() {
   if (localParts) {
     try {
       state.parts = JSON.parse(localParts);
+      // Auto-migrate if Sebimoto parts are missing in the local storage list
+      const hasSebimotoParts = state.parts.some(p => p.manufacturerId === 'sebimoto');
+      if (!hasSebimotoParts) {
+        state.parts = [...PARTS];
+        saveParts();
+      }
     } catch (e) {
       console.error("Chyba při načítání dílů:", e);
       state.parts = [...PARTS];
@@ -174,6 +180,12 @@ function loadData() {
   if (localMfgs) {
     try {
       state.manufacturers = JSON.parse(localMfgs);
+      // Auto-migrate if Sebimoto manufacturer is missing in the local storage list
+      const hasSebimotoMfg = state.manufacturers.some(m => m.id === 'sebimoto');
+      if (!hasSebimotoMfg) {
+        state.manufacturers = [...MANUFACTURERS];
+        saveManufacturers();
+      }
     } catch (e) {
       console.error("Chyba při načítání výrobců:", e);
       state.manufacturers = [...MANUFACTURERS];

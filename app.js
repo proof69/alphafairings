@@ -2,6 +2,7 @@ import { CATEGORIES, MOTORCYCLES, MANUFACTURERS, PARTS } from './parts-data.js';
 
 // Application State
 const state = {
+  selectedBrand: 'all',
   selectedMotorcycle: 'all',
   selectedCategory: 'all',
   searchQuery: '',
@@ -15,6 +16,8 @@ const state = {
 
 // DOM Elements
 const motoSelector = document.getElementById('moto-selector');
+const motoModelSelectorGroup = document.getElementById('moto-model-selector-group');
+const motoModelSelector = document.getElementById('moto-model-selector');
 const categorySelector = document.getElementById('category-selector');
 const partsGrid = document.getElementById('parts-grid');
 const emptyState = document.getElementById('empty-state');
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   initAdminSession();
   renderMotoSelectors();
+  renderModelSelectors();
   renderCategorySelectors();
   renderManufacturers();
   renderParts();
@@ -151,8 +155,9 @@ function loadData() {
   if (localMotos) {
     try {
       state.motorcycles = JSON.parse(localMotos);
-      // Auto-migrate if the user has old dataset (less than 15 brands)
-      if (state.motorcycles.length < MOTORCYCLES.length) {
+      // Auto-migrate if the user has old dataset (buggy ID or old format)
+      const hasOldData = state.motorcycles.some(m => m.id === 'ducati-racing-model-1299' || m.id === 'yamaha-r1-v-echny-roky');
+      if (hasOldData || state.motorcycles.length < 100) {
         state.motorcycles = [...MOTORCYCLES];
         saveMotorcycles();
       }
@@ -244,6 +249,7 @@ function setAdminMode(active) {
   
   // Re-render components to show/hide edit tools
   renderMotoSelectors();
+  renderModelSelectors();
   renderManufacturers();
   renderParts();
 }
@@ -277,26 +283,71 @@ async function handleLoginSubmit() {
   }
 }
 
-// Render Filters and Selectors
+// Render Filters and Selectors (Brands)
 function renderMotoSelectors() {
   motoSelector.innerHTML = '';
   
-  // "All" option card
+  // "All" brands option card
+  const allCard = document.createElement('button');
+  allCard.type = 'button';
+  allCard.className = `moto-card-all ${state.selectedBrand === 'all' ? 'active' : ''}`;
+  allCard.setAttribute('aria-pressed', state.selectedBrand === 'all');
+  allCard.innerHTML = `
+    <span class="all-icon">🏍️</span>
+    <span class="all-text">Všechny značky</span>
+  `;
+  allCard.addEventListener('click', () => {
+    selectBrand('all');
+  });
+  motoSelector.appendChild(allCard);
+  
+  // Get sorted unique brands
+  const brands = [...new Set(state.motorcycles.map(bike => bike.brand))].sort();
+  
+  brands.forEach(brand => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = `brand-card ${state.selectedBrand === brand ? 'active' : ''}`;
+    card.setAttribute('aria-pressed', state.selectedBrand === brand);
+    card.innerHTML = `<div class="brand-name">${brand}</div>`;
+    
+    card.addEventListener('click', () => {
+      selectBrand(brand);
+    });
+    
+    motoSelector.appendChild(card);
+  });
+}
+
+// Render Models for the selected brand
+function renderModelSelectors() {
+  if (state.selectedBrand === 'all') {
+    motoModelSelectorGroup.classList.add('hidden');
+    motoModelSelector.innerHTML = '';
+    return;
+  }
+  
+  motoModelSelectorGroup.classList.remove('hidden');
+  motoModelSelector.innerHTML = '';
+  
+  // "All models of brand" option card
   const allCard = document.createElement('button');
   allCard.type = 'button';
   allCard.className = `moto-card-all ${state.selectedMotorcycle === 'all' ? 'active' : ''}`;
   allCard.setAttribute('aria-pressed', state.selectedMotorcycle === 'all');
   allCard.innerHTML = `
     <span class="all-icon">🏍️</span>
-    <span class="all-text">Všechny motocykly</span>
+    <span class="all-text">Všechny modely ${state.selectedBrand}</span>
   `;
   allCard.addEventListener('click', () => {
     selectMotorcycle('all');
   });
-  motoSelector.appendChild(allCard);
+  motoModelSelector.appendChild(allCard);
   
-  // Custom motorcycle cards from state.motorcycles
-  state.motorcycles.forEach(bike => {
+  // Filter motorcycles by selected brand
+  const brandBikes = state.motorcycles.filter(bike => bike.brand === state.selectedBrand);
+  
+  brandBikes.forEach(bike => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = `moto-card ${state.selectedMotorcycle === bike.id ? 'active' : ''}`;
@@ -320,7 +371,6 @@ function renderMotoSelectors() {
       </div>
     `;
     
-    // Select bike unless admin button is clicked
     card.addEventListener('click', (e) => {
       if (e.target.closest('.moto-card-admin-actions')) return;
       selectMotorcycle(bike.id);
@@ -337,7 +387,7 @@ function renderMotoSelectors() {
       });
     }
     
-    motoSelector.appendChild(card);
+    motoModelSelector.appendChild(card);
   });
 }
 
@@ -370,9 +420,18 @@ function renderCategorySelectors() {
 }
 
 // Selection Action Handlers
+function selectBrand(brand) {
+  state.selectedBrand = brand;
+  state.selectedMotorcycle = 'all'; // Reset model selection on brand change
+  renderMotoSelectors();
+  renderModelSelectors();
+  updateActiveFiltersBar();
+  renderParts();
+}
+
 function selectMotorcycle(id) {
   state.selectedMotorcycle = id;
-  renderMotoSelectors();
+  renderModelSelectors();
   updateActiveFiltersBar();
   renderParts();
 }
@@ -388,12 +447,19 @@ function selectCategory(id) {
 function updateActiveFiltersBar() {
   const activeFilters = [];
   
-  if (state.selectedMotorcycle !== 'all') {
-    const bike = state.motorcycles.find(m => m.id === state.selectedMotorcycle);
-    if (bike) {
+  if (state.selectedBrand !== 'all') {
+    if (state.selectedMotorcycle !== 'all') {
+      const bike = state.motorcycles.find(m => m.id === state.selectedMotorcycle);
+      if (bike) {
+        activeFilters.push({
+          type: 'motorcycle',
+          label: `Model: ${bike.brand} ${bike.model}`
+        });
+      }
+    } else {
       activeFilters.push({
-        type: 'motorcycle',
-        label: `${bike.brand} ${bike.model}`
+        type: 'brand',
+        label: `Značka: ${state.selectedBrand}`
       });
     }
   }
@@ -429,6 +495,7 @@ function updateActiveFiltersBar() {
       
       pill.querySelector('button').addEventListener('click', () => {
         if (filter.type === 'motorcycle') selectMotorcycle('all');
+        if (filter.type === 'brand') selectBrand('all');
         if (filter.type === 'category') selectCategory('all');
         if (filter.type === 'search') {
           state.searchQuery = '';
@@ -450,9 +517,20 @@ function renderParts() {
   
   // Filter logic based on dynamic state.parts
   const filteredParts = state.parts.filter(part => {
-    // Motorcycle filter
-    const matchesMotorcycle = state.selectedMotorcycle === 'all' || 
-      part.compatibilities.includes(state.selectedMotorcycle);
+    // Motorcycle/Brand filter
+    let matchesMotorcycle = false;
+    if (state.selectedBrand === 'all') {
+      matchesMotorcycle = true;
+    } else {
+      if (state.selectedMotorcycle === 'all') {
+        matchesMotorcycle = part.compatibilities.some(compId => {
+          const bike = state.motorcycles.find(m => m.id === compId);
+          return bike && bike.brand === state.selectedBrand;
+        });
+      } else {
+        matchesMotorcycle = part.compatibilities.includes(state.selectedMotorcycle);
+      }
+    }
       
     // Category filter
     const matchesCategory = state.selectedCategory === 'all' || 
@@ -1045,6 +1123,7 @@ function saveMotoForm() {
   saveMotorcycles();
   motoFormDialog.close();
   renderMotoSelectors();
+  renderModelSelectors();
   if (state.adminMode) {
     renderAdminDashboard();
   }
@@ -1071,6 +1150,7 @@ function deleteMotorcycle(motoId) {
     }
     
     renderMotoSelectors();
+    renderModelSelectors();
     updateActiveFiltersBar();
     renderParts();
     if (state.adminMode) {
@@ -1197,6 +1277,7 @@ function resetParts() {
     localStorage.removeItem('manufacturers');
     loadData();
     renderMotoSelectors();
+    renderModelSelectors();
     renderManufacturers();
     renderParts();
     if (state.adminMode) {
@@ -1593,12 +1674,14 @@ function setupEventListeners() {
   
   // Reset all filters
   clearFiltersBtn.addEventListener('click', () => {
+    state.selectedBrand = 'all';
     state.selectedMotorcycle = 'all';
     state.selectedCategory = 'all';
     state.searchQuery = '';
     searchInput.value = '';
     
     renderMotoSelectors();
+    renderModelSelectors();
     renderCategorySelectors();
     updateActiveFiltersBar();
     renderParts();
@@ -1606,12 +1689,14 @@ function setupEventListeners() {
   
   // Reset search button (Empty state)
   resetSearchBtn.addEventListener('click', () => {
+    state.selectedBrand = 'all';
     state.selectedMotorcycle = 'all';
     state.selectedCategory = 'all';
     state.searchQuery = '';
     searchInput.value = '';
     
     renderMotoSelectors();
+    renderModelSelectors();
     renderCategorySelectors();
     updateActiveFiltersBar();
     renderParts();

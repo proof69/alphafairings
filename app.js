@@ -142,9 +142,9 @@ function loadData() {
   if (localParts) {
     try {
       state.parts = JSON.parse(localParts);
-      // Auto-migrate if Sebimoto parts are missing in the local storage list
-      const hasSebimotoParts = state.parts.some(p => p.manufacturerId === 'sebimoto');
-      if (!hasSebimotoParts) {
+      // Auto-migrate if Sebimoto parts are missing or if we only have the old 3 generic parts (check if SKU A003002 is missing)
+      const hasSpecificSebimotoParts = state.parts.some(p => p.sku === 'A003002');
+      if (!hasSpecificSebimotoParts) {
         state.parts = [...PARTS];
         saveParts();
       }
@@ -161,9 +161,10 @@ function loadData() {
   if (localMotos) {
     try {
       state.motorcycles = JSON.parse(localMotos);
-      // Auto-migrate if the user has old dataset (buggy ID or old format)
+      // Auto-migrate if the user has old dataset or doesn't have the new G310 model
+      const hasNewModels = state.motorcycles.some(m => m.id === 'bmw-g310-2018');
       const hasOldData = state.motorcycles.some(m => m.id === 'ducati-racing-model-1299' || m.id === 'yamaha-r1-v-echny-roky');
-      if (hasOldData || state.motorcycles.length < 100) {
+      if (hasOldData || !hasNewModels || state.motorcycles.length < 234) {
         state.motorcycles = [...MOTORCYCLES];
         saveMotorcycles();
       }
